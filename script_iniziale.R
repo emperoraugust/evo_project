@@ -11,14 +11,20 @@ library(ggplot2)
 library(reshape2)
 library(geosphere)
 
+
+
 store_data<-read.csv("Data/store_data.csv")
 airport_master<-read.csv("Data/airport_master.csv")
 weather_data<-read.csv("Data/weather_data.csv")
 store_master<-read.csv("Data/store_master.csv")
 
+n<-nrow(airport_master)
+airport_master <- airport_master[1:(n-1),]
+
+
 colnames(store_data)[1]<-"id_store"
 colnames(store_master)[1]<-"id_store"
-
+colnames(weather_data)[1]<-"id_airport"
 
 table(store_data$id_store)
 
@@ -57,7 +63,7 @@ data_store5<-arrange(data_store5,txn_year,txn_week)
 data_store9<-arrange(data_store9,txn_year,txn_week)
 
 #Voglio determinare la stazione meteo più vicina per ogni negozio
-vector_meteo<-vector('numeric')
+nearest_airport<-vector('numeric')
 
 for(i in 1:nrow(store_master)){
     x<-cbind(airport_master$lat,airport_master$lon)
@@ -67,7 +73,16 @@ for(i in 1:nrow(store_master)){
                        y = c(store_master$lat[i],store_master$lon[i]),
                       fun = distVincentyEllipsoid)
     dist<-min(vect_dist)     #distanza in metri
-    vector_meteo<-c(vector_meteo,airport_master$airport_id[vect_dist==dist])
+    nearest_airport<-c(nearest_airport,airport_master$airport_id[vect_dist==dist])
 }
+
+rm(airport_master)
+
+store_master<-cbind(store_master,nearest_airport)
+weather_data<-weather_data %>% 
+              filter(id_airport %in% nearest_airport) %>%
+              select(id_airport,date,max_tempC,
+                     mean_tempC,min_tempC,precipitationmm,cloud_cover)
+    
 
 
